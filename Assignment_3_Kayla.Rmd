@@ -1,0 +1,301 @@
+---
+title: "Assignment 3"
+author: "Kayla Myros, Claire Tham, Khalil Kaba"
+date: "11/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+**Research Question**
+
+Does the housing real estate market see less activity in areas that have higher incidences of home ownership cost burden?  
+
+
+
+**Data Gathering Process**
+
+#setting up the R Markdown File
+
+```{r}
+library(tidyverse)
+library(tidycensus)
+library(readxl)
+library(knitr)
+library(tigris)
+library(sf)
+library(dplyr)
+```
+
+# Variable Definitions
+
+
+**CATEGORICAL VARIABLES**
+
+Our team created the following categorical variables using the U.S. Census Bureau, American Community Survey 1-year estimates data. 
+
+
+*Median Household Income, 2019* Data of median household income for each Metropolitan Statistical Area categorized into "high" and "low" categories. High median income is any incomes greater than 55,000 dollars, Low median income is equal to or less than 55,000 dollars. 
+
+
+
+*Mortgage Cost Burden, 2019* Mortgage cost burden data is defined as the percentage of the population within the Metropolitan Statistical Area that are homeowners with a mortgage who spend 30 percent or more of their income on their mortgage cost. The variable is defined as a category of a highly burdened area and less burdened area.
+Highly burdened means 30 percent or more of the mortgaged homeowner population are housing burdened. While less burdened means fewer than 30 percent of the mortgaged homeowner population are housing burdened. 
+
+
+
+**CONTINUOUS VARIABLES**
+
+Our team identified the following continuous variables from the Zillow research data center. 
+
+*For Sale Inventory, 2021* This data shows the number of homes on the housing market per the Metropolitan Statistical Area.It is reported monthly. 
+
+*Median Sales Price, 2021* This data shows the median sales price of homes sold on the housing market within the specific Metropolitan Statistical Area. It is reported monthly. 
+
+*Median List Price, 2021* This data shows the median listing price of homes on the housing market within the specific Metropolitan Statistical Area.This is what the property owner is asking for the home. This data is reported monthly. 
+
+
+
+
+
+
+# Loading and Cleaning the Data files
+
+```{r}
+
+Median_HH_Income <- read_excel("2019_medianHHincome.xlsx") %>%
+  mutate(MedIncome_Quality = ifelse(Med_Income > 55000, "High", "Low"))
+  # Median_HH_Income <- Median_HH_Income[ -c(1,3,4)]  
+
+
+Mortgage_Burden <- read_excel("MortgageBurden_MSA_2019_1yr.xlsx") %>%
+    mutate(MortBurd_Quality = ifelse(Pct_MortBurden > .30, "HighlyBurdened", "LessBurdened"))
+    colnames(Mortgage_Burden)[2] <- c("RegionName")
+    # Mortgage_Burden <- Mortgage_Burden[ -c(1,3:9)]
+
+ForSale_Inventory <- read_excel("MSA_For Sale Inventory.xlsx")
+# ForSale_Inventory <- ForSale_Inventory[ -c(1,2,4:13) ]
+
+Med_Sale_Price <- read_excel("MSA_Med Sale Price.xlsx")
+# Med_Sale_Price <- Med_Sale_Price[ -c(1,2,4:13) ]
+# colnames(Med_Sale_Price)[2] <- c("SaleP_Sep")
+colnames(Med_Sale_Price)[14] <- c("SaleP_Sep")
+
+
+Median_List_Price <- read_excel("MSA_Median List Price.xlsx")
+  # Median_List_Price <- Median_List_Price[ -c(1,2,4:49) ]
+  # colnames(Median_List_Price)[2] <- c("listP_Sep")
+  colnames(Median_List_Price)[50] <- c("listP_Sep")
+
+
+```
+
+# Fixing the Census Data MSA to Match Zillow Data MSA 
+
+```{r}
+
+Median_HH_Income$RegionName <- gsub("Albany-Schenectady-Troy, NY", "Albany, NY", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Allentown-Bethlehem-Easton, PA-NJ", "Allentown, PA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Atlanta-Sandy Springs-Alpharetta, GA", "Atlanta, GA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Austin-Round Rock-Georgetown, TX", "	Austin, TX", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Baltimore-Columbia-Towson, MD", "Baltimore, MD", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Birmingham-Hoover, AL", "Birmingham, AL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Boston-Cambridge-Newton, MA-NH", "Boston, MA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Buffalo-Cheektowaga, NY", "Buffalo, NY", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Charleston-North Charleston, SC", "Charleston, SC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Charlotte-Concord-Gastonia, NC-SC", "Charlotte, NC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Chicago-Naperville-Elgin, IL-IN-WI", "Chicago, IL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Cincinnati, OH-KY-IN", "Cincinnati, OH", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Cleveland-Elyria, OH", "Cleveland, OH", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Dallas-Fort Worth-Arlington, TX", "Dallas-Fort Worth, TX", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Dayton-Kettering, OH", "Dayton, OH", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Deltona-Daytona Beach-Ormond Beach, FL", "Daytona Beach, FL", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Denver-Aurora-Lakewood, CO", "Denver, CO", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Des Moines-West Des Moines, IA", "Des Moines, IA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Detroit-Warren-Dearborn, MI", "Detroit, MI", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Durham-Chapel Hill, NC", "Durham, NC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Grand Rapids-Kentwood, MI", "Grand Rapids, MI", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Greensboro-High Point, NC", "Greensboro, NC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Greenville-Anderson, SC", "Greenville, SC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Hartford-East Hartford-Middletown, CT", "Hartford, CT", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Houston-The Woodlands-Sugar Land, TX", "Houston, TX", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Indianapolis-Carmel-Anderson, IN", "Indianapolis, IN", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Las Vegas-Henderson-Paradise, NV", "Las Vegas, NV", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Little Rock-North Little Rock-Conway, AR", "Little Rock, AR", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Louisville/Jefferson County, KY-IN", "Louisville-Jefferson County, KY", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Memphis, TN-MS-AR", "Memphis, TN", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Memphis, TN-MS-AR", "Memphis, TN", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Miami-Fort Lauderdale-Pompano Beach, FL", "Miami-Fort Lauderdale, FL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Milwaukee-Waukesha, WI", "Milwaukee, WI", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Minneapolis-St. Paul-Bloomington, MN-WI", "Minneapolis-St Paul, MN", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Nashville-Davidson--Murfreesboro--Franklin, TN", "Nashville, TN", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("New Haven-Milford, CT", "New Haven, CT", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("New Orleans-Metairie, LA", "New Orleans, LA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("New York-Newark-Jersey City, NY-NJ-PA", "New York, NY", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Ogden-Clearfield, UT", "Ogden, UT", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Omaha-Council Bluffs, NE-IA", "Omaha, NE", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Orlando-Kissimmee-Sanford, FL", "Orlando, FL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Philadelphia-Camden-Wilmington, PA-NJ-DE-MD", "Philadelphia, PA", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Phoenix-Mesa-Chandler, AZ", "Phoenix, AZ", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Portland-South Portland, ME", "Portland, ME", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Providence-Warwick, RI-MA", "Providence, RI", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Raleigh-Cary, NC", "Raleigh, NC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Riverside-San Bernardino-Ontario, CA", "Riverside, CA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Sacramento-Roseville-Folsom, CA", "Sacramento, CA", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("San Diego-Chula Vista-Carlsbad, CA", "San Diego, CA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("San Francisco-Oakland-Berkeley, CA", "San Francisco, CA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("San Jose-Sunnyvale-Santa Clara, CA", "San Jose, CA", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Seattle-Tacoma-Bellevue, WA", "Seattle, WA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Tampa-St. Petersburg-Clearwater, FL", "Tampa, FL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Virginia Beach-Norfolk-Newport News, VA-NC", "Virginia Beach, VA", Median_HH_Income$RegionName)
+
+
+Median_HH_Income$RegionName <- gsub("Washington-Arlington-Alexandria, DC-VA-MD-WV", "Washington, DC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Median_HH_Income$RegionName)
+
+view(Median_HH_Income)
+
+```
+
+
+```{r}
+Mortgage_Burden$RegionName <- gsub("Albany-Schenectady-Troy, NY", "Albany, NY", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Allentown-Bethlehem-Easton, PA-NJ", "Allentown, PA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Atlanta-Sandy Springs-Alpharetta, GA", "Atlanta, GA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Austin-Round Rock-Georgetown, TX", "	Austin, TX", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Baltimore-Columbia-Towson, MD", "Baltimore, MD", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Birmingham-Hoover, AL", "Birmingham, AL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Boston-Cambridge-Newton, MA-NH", "Boston, MA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Buffalo-Cheektowaga, NY", "Buffalo, NY", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Charleston-North Charleston, SC", "Charleston, SC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Charlotte-Concord-Gastonia, NC-SC", "Charlotte, NC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Chicago-Naperville-Elgin, IL-IN-WI", "Chicago, IL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Cincinnati, OH-KY-IN", "Cincinnati, OH", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Cleveland-Elyria, OH", "Cleveland, OH", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Dallas-Fort Worth-Arlington, TX", "Dallas-Fort Worth, TX", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Dayton-Kettering, OH", "Dayton, OH", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Deltona-Daytona Beach-Ormond Beach, FL", "Daytona Beach, FL", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Denver-Aurora-Lakewood, CO", "Denver, CO", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Des Moines-West Des Moines, IA", "Des Moines, IA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Detroit-Warren-Dearborn, MI", "Detroit, MI", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Durham-Chapel Hill, NC", "Durham, NC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Grand Rapids-Kentwood, MI", "Grand Rapids, MI", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Greensboro-High Point, NC", "Greensboro, NC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Greenville-Anderson, SC", "Greenville, SC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Hartford-East Hartford-Middletown, CT", "Hartford, CT", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Houston-The Woodlands-Sugar Land, TX", "Houston, TX", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Indianapolis-Carmel-Anderson, IN", "Indianapolis, IN", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Las Vegas-Henderson-Paradise, NV", "Las Vegas, NV", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Little Rock-North Little Rock-Conway, AR", "Little Rock, AR", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Louisville/Jefferson County, KY-IN", "Louisville-Jefferson County, KY", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Memphis, TN-MS-AR", "Memphis, TN", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Memphis, TN-MS-AR", "Memphis, TN", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Miami-Fort Lauderdale-Pompano Beach, FL", "Miami-Fort Lauderdale, FL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Milwaukee-Waukesha, WI", "Milwaukee, WI", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Minneapolis-St. Paul-Bloomington, MN-WI", "Minneapolis-St Paul, MN", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Nashville-Davidson--Murfreesboro--Franklin, TN", "Nashville, TN", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("New Haven-Milford, CT", "New Haven, CT", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("New Orleans-Metairie, LA", "New Orleans, LA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("New York-Newark-Jersey City, NY-NJ-PA", "New York, NY", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Ogden-Clearfield, UT", "Ogden, UT", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Omaha-Council Bluffs, NE-IA", "Omaha, NE", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Orlando-Kissimmee-Sanford, FL", "Orlando, FL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Philadelphia-Camden-Wilmington, PA-NJ-DE-MD", "Philadelphia, PA", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Phoenix-Mesa-Chandler, AZ", "Phoenix, AZ", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Portland-South Portland, ME", "Portland, ME", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Providence-Warwick, RI-MA", "Providence, RI", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Raleigh-Cary, NC", "Raleigh, NC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Riverside-San Bernardino-Ontario, CA", "Riverside, CA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Sacramento-Roseville-Folsom, CA", "Sacramento, CA", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("San Diego-Chula Vista-Carlsbad, CA", "San Diego, CA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("San Francisco-Oakland-Berkeley, CA", "San Francisco, CA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("San Jose-Sunnyvale-Santa Clara, CA", "San Jose, CA", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Seattle-Tacoma-Bellevue, WA", "Seattle, WA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Tampa-St. Petersburg-Clearwater, FL", "Tampa, FL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Virginia Beach-Norfolk-Newport News, VA-NC", "Virginia Beach, VA", Mortgage_Burden$RegionName)
+
+
+Mortgage_Burden$RegionName <- gsub("Washington-Arlington-Alexandria, DC-VA-MD-WV", "Washington, DC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Mortgage_Burden$RegionName)
+
+
+
+```
+
+
+
+
+# Joining the datasets & filtering to variables needed
+
+```{r}
+
+data <-  left_join(Median_HH_Income, Mortgage_Burden) %>%
+  left_join(ForSale_Inventory) %>%
+  left_join(Median_List_Price) %>%
+  left_join(Med_Sale_Price)
+
+
+data <- data[ -c(3,4,6:12,15:26, 29:36) ]
+
+#kable(head(data))
+  
+
+
+```
+
+
+# Filter out the NA Data
+
+```{r}
+
+# df_filtered <- data1 %>% filter_at(vars(SaleP_Sep),all_vars(!is.na(.))) #These work too, but are just different functions that work with dplyr 
+# df_not_na <- data1 %>% filter(!is.na(SaleP_Sep))
+data <- data %>% drop_na(SaleP_Sep) 
+
+```
+
+
+
+# Observations (UPDATED)
+
+There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MSA)and there are 8 variables in the columns, 4 of which are our variables for the regression analyses. The additional columns are the GEOID, and raw data from which we calculated our Categorical Variables. 
+
+# Assignment 3 
+
+Our dependent variable is the For Sale Housing Inventory of each MSA. Our independent variables are median household income, mortgage burden, median home sale price, and median home list price.
+
+# Continious Variables: Correlations + Regression
+
+This is a correlation test between the dependent variable (For Sale Inventory) and an independent variable (Median Sale Price in September 2021). The correlation is 0.25. This means that there is a positve correlation between MSA
+
+```{r}
+
+cor.test(~ Inv_Sep + SaleP_Sep, data = data)
+
+# Correlation is 0.253145
+
+```
+
+
