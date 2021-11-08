@@ -282,7 +282,7 @@ There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MS
 
 Our dependent variable is the For Sale Housing Inventory of each MSA. Our independent variables are median household income, mortgage burden, median home sale price, and median home list price.
 
-# Continious Variables: Correlations + Regression
+# Continious Variables: Correlation + Regression
 
 This is a correlation test between the dependent variable (For Sale Inventory) and an independent variable (Median Sale Price in September 2021). The correlation is 0.25. This means that there is a positive correlation between median sale price and the size of the for sale inventory. 
 
@@ -304,5 +304,28 @@ summary(ListPrice_model)
 ```
 
 
+# Categorical Variables: T-Test and Regression
+
+This is a t-test between dependent variable (For Sale Inventory) and independent variable (Mortgage Burden). The mortgage burden quality variable is considered high if the 30 percent or higher of an MSA's homeowner population is considered mortgage burdened.  
+
+
+```{r}
+
+t.test(Inv_Sep ~ MortBurd_Quality, data)
+
+```
+The results of the t-test show that the p-value is less than 0.05, (it is 0.00928). Therefore, there is a difference of homes for sale in MSAs with a high mortgage burden compared to MSAs with a low mortgage burden. 
+
+
+
+This is a t-test between dependent variable (For Sale Inventory) and independent variable (Median Household Income Quality). The median household income is considered high if the MSA's median income is above $55,000 annually, and it's considered low if it is below that. 
+
+```{r}
+MedInc_model <- lm(Inv_Sep ~ MedIncome_Quality, data)
+
+summary(MedInc_model)
+```
+
+The p-value is not significant, as it is above 0.05, the p-value equals 0.104. 
 
 
