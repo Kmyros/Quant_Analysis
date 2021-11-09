@@ -300,6 +300,25 @@ ListPrice_model <- lm(Inv_Sep ~ listP_Sep, data = data)
 
 summary(ListPrice_model)
 ```
+This is a correlation test between the dependent variable (For Sale Inventory) and an independent variable (Mortgage Burden). The correlation is 0.1955168. This means that there is a positive correlation between median sale price and the percentage of Mortgage Burden. 
+```{r}
+cor.test(~ Inv_Sep + Pct_MortBurden, data = data)
+
+# Correlation is 0.1955168
+```
+This is  a regression test between the dependent variable (For Sale Inventory) and an independent variable (Motgage Burden). The p-value is 0.001. There is a positive but limited correlation between median list price and mortgage burden. 
+
+```{r}
+MortBurd_mode <- lm(Inv_Sep ~ Pct_MortBurden, data = data)
+
+summary(MortBurd_mode)
+```
+```{r}
+ggplot(data) +
+  geom_point(aes(x = Inv_Sep, y = Pct_MortBurden))
+ # abline(lm(Inv_Sep ~ listP_Sep))
+```
+
 
 This is a correlation test between the dependent variable (For Sale Inventory) and an independent variable (Median List Price in September 2021). The correlation is 0.25. This means that there is a small, positve  correlation between median list price and the size of the for sale inventory. 
 
@@ -310,6 +329,7 @@ cor.test(~ Inv_Sep + listP_Sep, data = data)
 # Correlation is 0.253145
 
 ```
+
 
 ```{r, echo = FALSE}
 ggplot(data) +
