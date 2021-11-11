@@ -384,13 +384,20 @@ The model below is testing whether or not the Median Sale Price in an MSA's hous
 SaleP_model <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality + listP_Sep + Inv_Sep, data = data)
 
 summary(SaleP_model)
+
+
+# Questions: it is pulling the Median Income Quality = "Low", how can I change it to high? Same for Mortgage Burden Quality
+## low median income and less burdened are the reference groups 
+# take out sales price from this model, to see the relationship between the other variables 
 ```
 
-Questions: it is pulling the Median Income Quality = "Low", how can I change it to high? Same for Mortgage Burden Quality 
+
 
 ```{r}
 
+Inv_model <- lm(Inv_Sep ~ MedIncome_Quality + MortBurd_Quality + listP_Sep + SaleP_Sep, data = data)
 
+summary(Inv_model)
 
 ```
 
