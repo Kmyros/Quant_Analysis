@@ -67,6 +67,8 @@ Median_HH_Income <- read_excel("2019_medianHHincome.xlsx") %>%
 Mortgage_Burden <- read_excel("MortgageBurden_MSA_2019_1yr.xlsx") %>%
     mutate(MortBurd_Quality = ifelse(Pct_MortBurden > .30, "HighlyBurdened", "LessBurdened"))
     colnames(Mortgage_Burden)[2] <- c("RegionName")
+    
+
 
 
 ForSale_Inventory <- read_excel("MSA_For Sale Inventory.xlsx")
@@ -272,6 +274,13 @@ data <- data %>% drop_na(SaleP_Sep)
 
 
 
+```{r}
+data$MortBurd_Quality <- factor(data$MortBurd_Quality, 
+                         levels = c( "LessBurdened",
+                                    "HighlyBurdened"))
+```
+
+
 ### Observations (UPDATED)
 
 There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MSA) and there are 8 variables in the columns, 4 of which are our variables for the regression analyses. The additional columns are the GEOID, and raw data from which we calculated our Categorical Variables. 
@@ -389,6 +398,15 @@ summary(SaleP_model)
 # Questions: it is pulling the Median Income Quality = "Low", how can I change it to high? Same for Mortgage Burden Quality
 ## low median income and less burdened are the reference groups 
 # take out sales price from this model, to see the relationship between the other variables 
+```
+
+
+
+```{r}
+SaleP_model2 <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, data = data)
+
+summary(SaleP_model2)
+
 ```
 
 
