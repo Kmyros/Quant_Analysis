@@ -1,7 +1,7 @@
 ---
-title: "Assignment 3"
+title: "Assignment 4"
 author: "Kayla Myros, Claire Tham, Khalil Kaba"
-date: "11/8/2021"
+date: "11/15/2021"
 output: html_document
 ---
 
@@ -9,11 +9,15 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Introduction
+### Introduction
 
-**Research Question**
+**Initial Research Question**
 
 Does the housing real estate market see less activity in areas that have higher incidences of home ownership cost burden?  
+
+**Revised Research Question** 
+
+In areas where there are higher incidences of home ownership cost burden is there a lower Median Sales Price of homes? 
 
 
 
@@ -28,7 +32,7 @@ library(sf)
 library(dplyr)
 ```
 
-# Variable Definitions
+#### Variable Definitions
 
 
 **CATEGORICAL VARIABLES**
@@ -85,7 +89,7 @@ Median_List_Price <- read_excel("MSA_Median List Price.xlsx")
 
 ```
 
-### Facilliate the Census Data MSA to Match Zillow Data MSA 
+#### Facilliate the Census Data MSA to Match Zillow Data MSA 
 
 Initially our datasets only matched by 25 MSAs out of approximately 300 available. There were two issues, the Zillow datasets had only 95 MSAs compared to the 300 listed by the Census Bureau. The second issue, was that the syntax between the dataset varied slightly. We used the gsub function to rename the Census Data variables to match the Zillow data MSA variables. 
 
@@ -238,9 +242,7 @@ Mortgage_Burden$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Mortgage
 ```
 
 
-
-
-### Joining the datasets & filtering to variables needed
+#### Joining the datasets & filtering to variables needed
 
 We joined our dataset based on the recoded MSA variables. 
 
@@ -261,7 +263,7 @@ data <- data[ -c(3,4,6:12,15:26, 29:36) ]
 ```
 
 
-### Filter out the NA Data
+#### Filter out the NA Data
 
 We filtered the data using the dyplr package and drop_na function. The Sales Price data had the fewest entries, so we filtered out the NA fields based on that column. 
 
@@ -274,135 +276,52 @@ data <- data %>% drop_na(SaleP_Sep)
 
 
 
-```{r}
+```{r,  echo = FALSE}
 data$MortBurd_Quality <- factor(data$MortBurd_Quality, 
                          levels = c( "LessBurdened",
                                     "HighlyBurdened"))
 ```
 
 
-### Observations (UPDATED)
+#### Observations (UPDATED)
 
 There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MSA) and there are 8 variables in the columns, 4 of which are our variables for the regression analyses. The additional columns are the GEOID, and raw data from which we calculated our Categorical Variables. 
 
-# ASSIGNMENT 3
-
-Our dependent variable is the For Sale Housing Inventory of each MSA. Our independent variables are median household income, mortgage burden, median home sale price, and median home list price.
-
-### Continious Variables: Correlation + Regression
-
-This is a correlation test between the dependent variable (For Sale Inventory) and an independent variable (Median Sale Price in September 2021). The correlation is 0.25. This means that there is a small positive correlation between median sale price and the size of the for sale inventory. 
-
-```{r, echo = FALSE}
-
-cor.test(~ Inv_Sep + SaleP_Sep, data = data)
-
-# Correlation is 0.253145
-
-```
 
 
-This is  a regression test between the dependent variable (For Sale Inventory) and an independent variable (Median List Price in September 2021). The p-value is 0.031, meaning there is about a 3% chance that these outcomes occured by chance or randomly. Rather, there is a small, positive correlation between median list price and size of the for sale inventory. 
-
-```{r, echo = FALSE}
-ListPrice_model <- lm(Inv_Sep ~ listP_Sep, data = data)
-
-summary(ListPrice_model)
-```
-
-This is a correlation test between the dependent variable (For Sale Inventory) and an independent variable (Median List Price in September 2021). The correlation is 0.25. This means that there is a small, positve  correlation between median list price and the size of the for sale inventory. 
-
-```{r, echo = FALSE}
-
-cor.test(~ Inv_Sep + listP_Sep, data = data)
-
-# Correlation is 0.253145
-
-```
-
-```{r, echo = FALSE}
-ggplot(data) +
-  geom_point(aes(y = Inv_Sep, x = listP_Sep))
- # abline(lm(Inv_Sep ~ listP_Sep))
-
-```
+## ASSIGNMENT 4 - Multivariate Regression Analysis 
 
 
 
-This is  a regression test between the dependent variable (For Sale Inventory) and an independent variable (Median Sale Price in September 2021). The p-value is 0.031. There is a small, positive correlation between median sale price and size of the for sale inventory. 
-
-```{r, echo = FALSE}
-SalePrice_model <- lm(Inv_Sep ~ SaleP_Sep, data = data)
-
-summary(SalePrice_model)
-```
-
-## Categorical Variable Test: : T-Test and Regression
+#### Model 1 - Sales Price vs. All Dependent Variables 
 
 
+The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market inventory, list price, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
 
-This is a t-test between dependent variable (For Sale Inventory) and independent variable (Mortgage Burden). The mortgage burden quality variable is considered high if the 30 percent or higher of an MSA's homeowner population is considered mortgage burdened.  The results of the t-test show that the p-value is less than 0.05, (it is 0.00928). Therefore, there is a difference of homes for sale in MSAs with a high mortgage burden compared to MSAs with a low mortgage burden. 
+All variables are statistically significant. However, as highlighted from the data, the coefficient estimates are very small, ranging from -0.0000000000000003074 to 0.0000000001107. While our results are statistically significant, indicating a relationship among the variables, the impact is very small.It is not even a dollar difference between the variables. 
 
-```{r, echo = FALSE}
+Furthermore, the multiple R-squared and adjusted R equal 1, and on the surface, it looks like it indicates that there is a strong correlation and relationship. But this relationship is skewed because the Median List Price (dependent variable) and Median Sales Price variable (independent variable) are directly correlated.
 
-t.test(Inv_Sep ~ MortBurd_Quality, data)
+Therefore, we re-ran the regression analysis without the Median List Price variable to understand the true effect of the dependent variables on the Median Sales Prices in the MSAs. 
 
-MBQ_model <- lm(Inv_Sep ~ MortBurd_Quality, data)
-
-summary(MBQ_model)
-
-```
-
-
-```{r, echo = FALSE}
-p <- ggplot(data) +
-  geom_point(aes(x = MortBurd_Quality, y = Inv_Sep)) 
-  p + labs (x = "MSA Mortgage Burden Rate", y = "Inventory Sep 2021", title = "Analysis")
-
-```
-
-
-
-
-
-This is a t-test between dependent variable (For Sale Inventory) and independent variable (Median Household Income Quality). The median household income is considered high if the MSA's median income is above $55,000 annually, and it's considered low if it is below that. The p-value is not significant, as it is above 0.05, the p-value equals 0.104. 
-
-```{r, echo = FALSE}
-MedInc_model <- lm(Inv_Sep ~ MedIncome_Quality, data)
-
-summary(MedInc_model)
-```
-
-
-
-
-```{r}
-p1 <- ggplot(data) +
-  geom_point(aes(x = MedIncome_Quality, y = Inv_Sep))
-   p1 + labs (x = "MSA Median Income Quality", y = "Inventory Sep 2021", title = "Regression Analysis")
-
-
-```
-
-
-# ASSIGNMENT 4 - Multivariate Regression Analysis 
-
-The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the inventory size, list price, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
-
-```{r}
+```{r,  echo = FALSE}
 SaleP_model <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality + listP_Sep + Inv_Sep, data = data)
 
 summary(SaleP_model)
 
-
-# Questions: it is pulling the Median Income Quality = "Low", how can I change it to high? Same for Mortgage Burden Quality
-## low median income and less burdened are the reference groups 
-# take out sales price from this model, to see the relationship between the other variables 
 ```
 
 
 
-```{r}
+#### Model 2 - Sales Price vs. All Dependent Variables except Median List Price
+
+
+The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market inventory, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
+
+MSAs that have a high rate of  mortgage burdened homeowners have a difference of$177,222  in Median Sales Price compared to less mortgage burdened MSAs. The relationship between Rate of Mortgage Burden in the MSA and the Median Sales Price was the only statistically significant relationship found in this model. 
+
+
+```{r,  echo = FALSE}
 SaleP_model2 <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, data = data)
 
 summary(SaleP_model2)
@@ -410,8 +329,13 @@ summary(SaleP_model2)
 ```
 
 
+#### Model 3 Original Question
 
-```{r}
+
+The original question examined whether there was a relationship between the size of the for sale housing inventory and the dependent variables: median list price, median sales price, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA. However, there is no statistically significant relationship between the variables. Therefore, we decided to test the other variables and found an interesting relationship between Median Sales Price. 
+
+
+```{r,  echo = FALSE}
 
 Inv_model <- lm(Inv_Sep ~ MedIncome_Quality + MortBurd_Quality + listP_Sep + SaleP_Sep, data = data)
 
