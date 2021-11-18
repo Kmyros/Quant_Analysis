@@ -367,9 +367,11 @@ export_summs(full_model, centered_model,
              error_pos = "same",
              model.names = c("Initial", "Centered"))
 ```
-The initial data showed the sales price (when the inventory is 0) is at $266812.68
+The initial data showed the sales price, when the inventory is 0, is at $266812.68.
 
-However, the new regression with means testing averages out the inventory.The sales price increases to $284302.65 
+However, the new regression with means testing shows the sales price for the average inventory.The sales price increases to $284302.65.
+
+As expected, the R value stays the same as only the data has been transformed, the relationship fit and coefficient values do not change.
 
 
 
