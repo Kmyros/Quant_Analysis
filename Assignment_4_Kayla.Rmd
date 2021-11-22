@@ -5,7 +5,7 @@ date: "11/15/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -22,7 +22,7 @@ In areas where there are higher incidences of home ownership cost burden is ther
 
 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(tidycensus)
 library(readxl)
@@ -246,7 +246,7 @@ Mortgage_Burden$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Mortgage
 
 We joined our dataset based on the recoded MSA variables. 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
 
 data <-  left_join(Median_HH_Income, Mortgage_Burden) %>%
   left_join(ForSale_Inventory) %>%
