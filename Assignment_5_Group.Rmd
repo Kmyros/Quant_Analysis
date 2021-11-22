@@ -32,6 +32,9 @@ library(sf)
 library(dplyr)
 library(gridExtra)
 library(jtools)
+library(huxtable)
+
+
 ```
 
 #### Variable Definitions
@@ -291,10 +294,6 @@ There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MS
 
 
 
-## ASSIGNMENT 4 - Multivariate Regression Analysis 
-
-
-
 #### Model 1 - Sales Price vs. All Dependent Variables 
 
 
@@ -331,23 +330,9 @@ summary(SaleP_model2)
 ```
 
 
-#### Model 3 Original Question
-
-
-The original question examined whether there was a relationship between the size of the for sale housing inventory and the dependent variables: median list price, median sales price, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA. However, there is no statistically significant relationship between the variables. Therefore, we decided to test the other variables and found an interesting relationship between Median Sales Price. 
-
-
-```{r,  echo = FALSE}
-
-Inv_model <- lm(Inv_Sep ~ MedIncome_Quality + MortBurd_Quality + listP_Sep + SaleP_Sep, data = data)
-
-summary(Inv_model)
-
-```
-
 ## Assignment 5
 
-#Means Centering (Model 2)
+#### Means Centering Model 2
 
 ```{r}
 full_model <- SaleP_model2 <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, data = data)
@@ -357,22 +342,41 @@ summary(full_model)
 
 
 ```{r}
+
+mean(data$Inv_Sep, na.rm = TRUE)
+
 centered_data <- data %>%
   mutate(Inv_Sep = Inv_Sep - mean(Inv_Sep, na.rm=TRUE))
 
 centered_model <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, centered_data)
 
+
+coeff_names <- c("Constant" = "(Intercept)",
+                 "Median Sales Price" = "SaleP_Sep", 
+                 "Highly Mortgage Burdened" = "MortBurd_Quality",
+                 "Low Median Household Income" = "MedIncome_Quality")
+
+
+
+
+
+
+
+
 export_summs(full_model, centered_model, 
              error_format = "(p = {p.value})",
              error_pos = "same",
-             model.names = c("Initial", "Centered"))
+             model.names = c("Initial", "Centered"),
+             coefs = coeff_names)
 ```
+
+
 
 The initial model had a y-intercept of $266,812, meaning that if no homes were listed for sale, (inventory equals zero) than the median sales price would be $266,812. However, an inventory of zero would mean that there is no activity in the housing market, therefore there cannot be a median sales price because no sales are occurring. 
 
-Therefore, we tested the same regression model but used a means centering transformation. The means centered regression model has a median sales price of $284,302 based on the average sized inventory. 
+Therefore, we tested the same regression model but used a means centering transformation. The means centered regression model has a median sales price of $284,302 based on the average sized inventory. The average housing inventory size is 8,336 homes.  
 
-As expected, the R value stays the same as only the data has been transformed, the relationship fit and coefficient values do not change.
+As expected, the R value, relationship fit and coefficient values do not change as only the data has been transformed to have a more meaningful interpretation. 
 
 
 
