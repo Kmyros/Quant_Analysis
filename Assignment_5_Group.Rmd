@@ -2,14 +2,19 @@
 title: "Assignment 5"
 author: "Kayla Myros, Claire Tham, Khalil Kaba"
 date: "11/22/2021"
-output: html_document
+output: 
+  html_document:
+        theme: united
+        toc: true
+        toc_float: true
+        
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Introduction
+# Introduction
 
 **Initial Research Question**
 
@@ -22,7 +27,7 @@ In areas where there are higher incidences of home ownership cost burden is ther
 
 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(tidycensus)
 library(readxl)
@@ -66,7 +71,7 @@ Our team identified the following continuous variables from the Zillow research 
 
 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, message = FALSE}
 
 Median_HH_Income <- read_excel("2019_medianHHincome.xlsx") %>%
   mutate(MedIncome_Quality = ifelse(Med_Income > 55000, "High", "Low"))
@@ -98,7 +103,7 @@ Median_List_Price <- read_excel("MSA_Median List Price.xlsx")
 
 Initially our datasets only matched by 25 MSAs out of approximately 300 available. There were two issues, the Zillow datasets had only 95 MSAs compared to the 300 listed by the Census Bureau. The second issue, was that the syntax between the dataset varied slightly. We used the gsub function to rename the Census Data variables to match the Zillow data MSA variables. 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, message = FALSE}
 
 Median_HH_Income$RegionName <- gsub("Albany-Schenectady-Troy, NY", "Albany, NY", Median_HH_Income$RegionName)
 Median_HH_Income$RegionName <- gsub("Allentown-Bethlehem-Easton, PA-NJ", "Allentown, PA", Median_HH_Income$RegionName)
@@ -173,7 +178,7 @@ Median_HH_Income$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Median_
 ```
 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, message = FALSE}
 Mortgage_Burden$RegionName <- gsub("Albany-Schenectady-Troy, NY", "Albany, NY", Mortgage_Burden$RegionName)
 Mortgage_Burden$RegionName <- gsub("Allentown-Bethlehem-Easton, PA-NJ", "Allentown, PA", Mortgage_Burden$RegionName)
 Mortgage_Burden$RegionName <- gsub("Atlanta-Sandy Springs-Alpharetta, GA", "Atlanta, GA", Mortgage_Burden$RegionName)
@@ -249,9 +254,9 @@ Mortgage_Burden$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Mortgage
 
 #### Joining the datasets & filtering to variables needed
 
-We joined our dataset based on the recoded MSA variables. 
+We joined our dataset based on the re-coded MSA variables. 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, message = FALSE}
 
 data <-  left_join(Median_HH_Income, Mortgage_Burden) %>%
   left_join(ForSale_Inventory) %>%
@@ -272,7 +277,7 @@ data <- data[ -c(3,4,6:12,15:26, 29:36) ]
 
 We filtered the data using the dyplr package and drop_na function. The Sales Price data had the fewest entries, so we filtered out the NA fields based on that column. 
 
-```{r, , echo = FALSE}
+```{r, , echo = FALSE, message = FALSE}
 
 
 data <- data %>% drop_na(SaleP_Sep) 
@@ -281,7 +286,7 @@ data <- data %>% drop_na(SaleP_Sep)
 
 
 
-```{r,  echo = FALSE}
+```{r,  echo = FALSE, message = FALSE}
 data$MortBurd_Quality <- factor(data$MortBurd_Quality, 
                          levels = c( "LessBurdened",
                                     "HighlyBurdened"))
@@ -294,10 +299,10 @@ There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MS
 
 
 
-#### Model 1 - Sales Price vs. All Dependent Variables 
+### Model 1 - Sales Price vs. All Dependent Variables 
 
 
-The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market inventory, list price, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
+The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market's for sale inventory, list price, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
 
 All variables are statistically significant. However, as highlighted from the data, the coefficient estimates are very small, ranging from -0.0000000000000003074 to 0.0000000001107. While our results are statistically significant, indicating a relationship among the variables, the impact is very small.It is not even a dollar difference between the variables. 
 
@@ -314,10 +319,10 @@ summary(SaleP_model)
 
 
 
-#### Model 2 - Sales Price vs. All Dependent Variables except Median List Price
+### Model 2 - Sales Price vs. All Dependent Variables except Median List Price
 
 
-The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market inventory, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
+The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market's for sale inventory, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
 
 MSAs that have a high rate of  mortgage burdened homeowners have a difference of$177,222  in Median Sales Price compared to less mortgage burdened MSAs. The relationship between Rate of Mortgage Burden in the MSA and the Median Sales Price was the only statistically significant relationship found in this model. 
 
@@ -330,18 +335,20 @@ summary(SaleP_model2)
 ```
 
 
-## Assignment 5
+# Model Transformation
 
-#### Means Centering Model 2
+### Means Centering Model 2
 
-```{r}
+Our team is continuing to work with Model 2 because it had a statistically significant relationship and does not include the variable (Median List Price) that has a direct correlation to the independent variable. Below we transform our selected model to be means centered. In Model 2, we only have one variable that can be transformed, Housing Market For Sale Inventory, because it is our only continuous variable in this model. Means centering will take the average for sale inventory size (8,336 housing units) and will center each MSA's for sale inventory above or below that. 
+
+```{r, echo = FALSE}
 full_model <- SaleP_model2 <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, data = data)
 
 summary(full_model)
 ```
 
 
-```{r}
+```{r, echo = FALSE, message = FALSE}
 
 mean(data$Inv_Sep, na.rm = TRUE)
 
@@ -351,35 +358,23 @@ centered_data <- data %>%
 centered_model <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, centered_data)
 
 
-coeff_names <- c("Constant" = "(Intercept)",
-                 "Median Sales Price" = "SaleP_Sep", 
-                 "Highly Mortgage Burdened" = "MortBurd_Quality",
-                 "Low Median Household Income" = "MedIncome_Quality")
-
-
-
-
-
 
 
 
 export_summs(full_model, centered_model, 
              error_format = "(p = {p.value})",
              error_pos = "same",
-             model.names = c("Initial", "Centered"),
-             coefs = coeff_names)
+             model.names = c("Initial", "Centered"))
 ```
 
 
 
-The initial model had a y-intercept of $266,812, meaning that if no homes were listed for sale, (inventory equals zero) than the median sales price would be $266,812. However, an inventory of zero would mean that there is no activity in the housing market, therefore there cannot be a median sales price because no sales are occurring. 
+The initial model had a y-intercept of $266,812, meaning that if no homes were listed for sale, (inventory equals zero) than the median sales price would be $266,812. However, an inventory of zero would mean that there is no activity in the housing market, and if no homes are listed for sale, than none would be sold. Therefore it's impossible to have a median sales price when no sales are transacting. 
 
-Therefore, we tested the same regression model but used a means centering transformation. The means centered regression model has a median sales price of $284,302 based on the average sized inventory. The average housing inventory size is 8,336 homes.  
-
-As expected, the R value, relationship fit and coefficient values do not change as only the data has been transformed to have a more meaningful interpretation. 
+After a means centered transformation, the new regression model has a median sales price of $284,302 based on the average sized inventory. The average housing inventory size is 8,336 homes.  As expected, the R value, relationship fit and coefficient values do not change as only the data has been transformed to have a more meaningful interpretation. 
 
 
-
+The means centered transformation worked best for our model because the data was already at a scale that made sense and was able to be interpreted. Furthermore, the variables have a small direct relationship, so a non-linear transformation would not have positively impacted the fit of the model. 
 
 
 
