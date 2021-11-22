@@ -1,7 +1,7 @@
 ---
-title: "Assignment 4"
+title: "Assignment 5"
 author: "Kayla Myros, Claire Tham, Khalil Kaba"
-date: "11/15/2021"
+date: "11/22/2021"
 output: html_document
 ---
 
@@ -91,7 +91,7 @@ Median_List_Price <- read_excel("MSA_Median List Price.xlsx")
 
 ```
 
-#### Facilliate the Census Data MSA to Match Zillow Data MSA 
+#### Matching the Census Data MSA to the Zillow Data MSA 
 
 Initially our datasets only matched by 25 MSAs out of approximately 300 available. There were two issues, the Zillow datasets had only 95 MSAs compared to the 300 listed by the Census Bureau. The second issue, was that the syntax between the dataset varied slightly. We used the gsub function to rename the Census Data variables to match the Zillow data MSA variables. 
 
@@ -345,7 +345,7 @@ summary(Inv_model)
 
 ```
 
-Assignment 5
+## Assignment 5
 
 #Means Centering (Model 2)
 
@@ -367,9 +367,10 @@ export_summs(full_model, centered_model,
              error_pos = "same",
              model.names = c("Initial", "Centered"))
 ```
-The initial data showed the sales price, when the inventory is 0, is at $266812.68.
 
-However, the new regression with means testing shows the sales price for the average inventory.The sales price increases to $284302.65.
+The initial model had a y-intercept of $266,812, meaning that if no homes were listed for sale, (inventory equals zero) than the median sales price would be $266,812. However, an inventory of zero would mean that there is no activity in the housing market, therefore there cannot be a median sales price because no sales are occurring. 
+
+Therefore, we tested the same regression model but used a means centering transformation. The means centered regression model has a median sales price of $284,302 based on the average sized inventory. 
 
 As expected, the R value stays the same as only the data has been transformed, the relationship fit and coefficient values do not change.
 
