@@ -361,13 +361,15 @@ coeff_names <- c("Constant" = "(Intercept)",
          #       "Median Sales Price" = "SaleP_Sep", 
                  "Highly Mortgage Burdened" =
                    "MortBurd_QualityHighlyBurdened",
+                  "Monthly For sale inventory" = "Inv_Sep",
                  "Low Median Household Income" = "MedIncome_QualityLow")
 
 export_summs(full_model, centered_model, 
              error_format = "(p = {p.value})",
              error_pos = "same",
              model.names = c("Initial", "Centered"),
-             coefs = coeff_names)
+                coefs = coeff_names)
+          
 ```
 
 
