@@ -357,14 +357,17 @@ centered_data <- data %>%
 
 centered_model <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, centered_data)
 
-
-
-
+coeff_names <- c("Constant" = "(Intercept)",
+         #       "Median Sales Price" = "SaleP_Sep", 
+                 "Highly Mortgage Burdened" =
+                   "MortBurd_QualityHighlyBurdened",
+                 "Low Median Household Income" = "MedIncome_QualityLow")
 
 export_summs(full_model, centered_model, 
              error_format = "(p = {p.value})",
              error_pos = "same",
-             model.names = c("Initial", "Centered"))
+             model.names = c("Initial", "Centered"),
+             coefs = coeff_names)
 ```
 
 
