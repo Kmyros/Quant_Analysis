@@ -390,14 +390,23 @@ https://c-voulgaris.github.io/GSD_SES_5215_F2021/A6_Example.html#Bivariate_regre
 
 
 ```{r}
-effect_plot(full_model, pred = Inv_Sep, interval = TRUE) +
-  scale_y_continuous(name = "Y Variables??") +
-  scale_x_continuous(name = "For Sale House Inventory")
+effect_plot(full_model, pred = SaleP_Sep, interval = TRUE) +
+  scale_y_continuous(name = "Inventory Size for MSAs /n by Socioeconomic determinants") +
+  scale_x_continuous(name = "Median Sale Price")
                     # breaks = breaks <- seq(0, 700, by = 100),
                      #labels = prettyNum(breaks*100, big.mark = ","))
 
 ```
 
+
+Interaction Model 
+
+How does Housing Burden impact Sale Price in an MSA? 
+```{r}
+#interaction_model <- lm(covid_rate ~ med_age_10 + log(pop_dens, base = 2) + majority_vote + type + med_age_10*majority_vote, centered_data_scaled_log)
+
+#the interaction is med_age_10*majority_vote
+```
 
 
 
