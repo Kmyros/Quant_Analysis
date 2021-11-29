@@ -1,0 +1,403 @@
+---
+title: "Assignment 6"
+author: "Kayla Myros, Claire Tham, Khalil Kaba"
+date: "11/28/2021"
+output: 
+  html_document:
+        theme: united
+        toc: true
+        toc_float: true
+        
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+**Initial Research Question**
+
+Does the housing real estate market see less activity in areas that have higher incidences of home ownership cost burden?  
+
+**Revised Research Question** 
+
+In areas where there are higher incidences of home ownership cost burden is there a lower Median Sales Price of homes? 
+
+
+
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(tidycensus)
+library(readxl)
+library(knitr)
+library(tigris)
+library(sf)
+library(dplyr)
+library(gridExtra)
+library(jtools)
+library(huxtable)
+
+
+```
+
+#### Variable Definitions
+
+
+**CATEGORICAL VARIABLES**
+
+Our team created the following categorical variables using the U.S. Census Bureau, American Community Survey 1-year estimates data. 
+
+
+*Median Household Income, 2019* Data of median household income for each Metropolitan Statistical Area categorized into "high" and "low" categories. High median income is any incomes greater than 55,000 dollars, Low median income is equal to or less than 55,000 dollars. 
+
+
+
+*Mortgage Cost Burden, 2019* Mortgage cost burden data is defined as the percentage of the population within the Metropolitan Statistical Area that are homeowners with a mortgage who spend 30 percent or more of their income on their mortgage cost. The variable is defined as a category of a highly burdened area and less burdened area.
+Highly burdened means 30 percent or more of the mortgaged homeowner population are housing burdened. While less burdened means fewer than 30 percent of the mortgaged homeowner population are housing burdened. 
+
+
+
+**CONTINUOUS VARIABLES**
+
+Our team identified the following continuous variables from the Zillow research data center. 
+
+*For Sale Inventory, 2021* This data shows the number of homes on the housing market per the Metropolitan Statistical Area.It is reported monthly. 
+
+*Median Sales Price, 2021* This data shows the median sales price of homes sold on the housing market within the specific Metropolitan Statistical Area. It is reported monthly. 
+
+*Median List Price, 2021* This data shows the median listing price of homes on the housing market within the specific Metropolitan Statistical Area.This is what the property owner is asking for the home. This data is reported monthly. 
+
+
+
+```{r, echo = FALSE, message = FALSE}
+
+Median_HH_Income <- read_excel("2019_medianHHincome.xlsx") %>%
+  mutate(MedIncome_Quality = ifelse(Med_Income > 55000, "High", "Low"))
+
+
+
+Mortgage_Burden <- read_excel("MortgageBurden_MSA_2019_1yr.xlsx") %>%
+    mutate(MortBurd_Quality = ifelse(Pct_MortBurden > .30, "HighlyBurdened", "LessBurdened"))
+    colnames(Mortgage_Burden)[2] <- c("RegionName")
+    
+
+
+
+ForSale_Inventory <- read_excel("MSA_For Sale Inventory.xlsx")
+
+
+Med_Sale_Price <- read_excel("MSA_Med Sale Price.xlsx")
+  colnames(Med_Sale_Price)[14] <- c("SaleP_Sep")
+
+
+Median_List_Price <- read_excel("MSA_Median List Price.xlsx")
+  Median_List_Price <- Median_List_Price[ -c(1,2,4:49) ]
+  colnames(Median_List_Price)[2] <- c("listP_Sep")
+
+
+```
+
+#### Matching the Census Data MSA to the Zillow Data MSA 
+
+Initially our datasets only matched by 25 MSAs out of approximately 300 available. There were two issues, the Zillow datasets had only 95 MSAs compared to the 300 listed by the Census Bureau. The second issue, was that the syntax between the dataset varied slightly. We used the gsub function to rename the Census Data variables to match the Zillow data MSA variables. 
+
+```{r, echo = FALSE, message = FALSE}
+
+Median_HH_Income$RegionName <- gsub("Albany-Schenectady-Troy, NY", "Albany, NY", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Allentown-Bethlehem-Easton, PA-NJ", "Allentown, PA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Atlanta-Sandy Springs-Alpharetta, GA", "Atlanta, GA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Austin-Round Rock-Georgetown, TX", "	Austin, TX", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Baltimore-Columbia-Towson, MD", "Baltimore, MD", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Birmingham-Hoover, AL", "Birmingham, AL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Boston-Cambridge-Newton, MA-NH", "Boston, MA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Buffalo-Cheektowaga, NY", "Buffalo, NY", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Charleston-North Charleston, SC", "Charleston, SC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Charlotte-Concord-Gastonia, NC-SC", "Charlotte, NC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Chicago-Naperville-Elgin, IL-IN-WI", "Chicago, IL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Cincinnati, OH-KY-IN", "Cincinnati, OH", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Cleveland-Elyria, OH", "Cleveland, OH", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Dallas-Fort Worth-Arlington, TX", "Dallas-Fort Worth, TX", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Dayton-Kettering, OH", "Dayton, OH", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Deltona-Daytona Beach-Ormond Beach, FL", "Daytona Beach, FL", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Denver-Aurora-Lakewood, CO", "Denver, CO", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Des Moines-West Des Moines, IA", "Des Moines, IA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Detroit-Warren-Dearborn, MI", "Detroit, MI", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Durham-Chapel Hill, NC", "Durham, NC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Grand Rapids-Kentwood, MI", "Grand Rapids, MI", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Greensboro-High Point, NC", "Greensboro, NC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Greenville-Anderson, SC", "Greenville, SC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Hartford-East Hartford-Middletown, CT", "Hartford, CT", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Houston-The Woodlands-Sugar Land, TX", "Houston, TX", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Indianapolis-Carmel-Anderson, IN", "Indianapolis, IN", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Las Vegas-Henderson-Paradise, NV", "Las Vegas, NV", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Little Rock-North Little Rock-Conway, AR", "Little Rock, AR", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Louisville/Jefferson County, KY-IN", "Louisville-Jefferson County, KY", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Memphis, TN-MS-AR", "Memphis, TN", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Memphis, TN-MS-AR", "Memphis, TN", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Miami-Fort Lauderdale-Pompano Beach, FL", "Miami-Fort Lauderdale, FL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Milwaukee-Waukesha, WI", "Milwaukee, WI", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Minneapolis-St. Paul-Bloomington, MN-WI", "Minneapolis-St Paul, MN", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Nashville-Davidson--Murfreesboro--Franklin, TN", "Nashville, TN", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("New Haven-Milford, CT", "New Haven, CT", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("New Orleans-Metairie, LA", "New Orleans, LA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("New York-Newark-Jersey City, NY-NJ-PA", "New York, NY", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Ogden-Clearfield, UT", "Ogden, UT", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Omaha-Council Bluffs, NE-IA", "Omaha, NE", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Orlando-Kissimmee-Sanford, FL", "Orlando, FL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Philadelphia-Camden-Wilmington, PA-NJ-DE-MD", "Philadelphia, PA", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Phoenix-Mesa-Chandler, AZ", "Phoenix, AZ", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Portland-South Portland, ME", "Portland, ME", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Providence-Warwick, RI-MA", "Providence, RI", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Raleigh-Cary, NC", "Raleigh, NC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Riverside-San Bernardino-Ontario, CA", "Riverside, CA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Sacramento-Roseville-Folsom, CA", "Sacramento, CA", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("San Diego-Chula Vista-Carlsbad, CA", "San Diego, CA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("San Francisco-Oakland-Berkeley, CA", "San Francisco, CA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("San Jose-Sunnyvale-Santa Clara, CA", "San Jose, CA", Median_HH_Income$RegionName)
+
+Median_HH_Income$RegionName <- gsub("Seattle-Tacoma-Bellevue, WA", "Seattle, WA", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Tampa-St. Petersburg-Clearwater, FL", "Tampa, FL", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Virginia Beach-Norfolk-Newport News, VA-NC", "Virginia Beach, VA", Median_HH_Income$RegionName)
+
+
+Median_HH_Income$RegionName <- gsub("Washington-Arlington-Alexandria, DC-VA-MD-WV", "Washington, DC", Median_HH_Income$RegionName)
+Median_HH_Income$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Median_HH_Income$RegionName)
+
+
+
+```
+
+
+```{r, echo = FALSE, message = FALSE}
+Mortgage_Burden$RegionName <- gsub("Albany-Schenectady-Troy, NY", "Albany, NY", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Allentown-Bethlehem-Easton, PA-NJ", "Allentown, PA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Atlanta-Sandy Springs-Alpharetta, GA", "Atlanta, GA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Austin-Round Rock-Georgetown, TX", "	Austin, TX", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Baltimore-Columbia-Towson, MD", "Baltimore, MD", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Birmingham-Hoover, AL", "Birmingham, AL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Boston-Cambridge-Newton, MA-NH", "Boston, MA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Buffalo-Cheektowaga, NY", "Buffalo, NY", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Charleston-North Charleston, SC", "Charleston, SC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Charlotte-Concord-Gastonia, NC-SC", "Charlotte, NC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Chicago-Naperville-Elgin, IL-IN-WI", "Chicago, IL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Cincinnati, OH-KY-IN", "Cincinnati, OH", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Cleveland-Elyria, OH", "Cleveland, OH", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Dallas-Fort Worth-Arlington, TX", "Dallas-Fort Worth, TX", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Dayton-Kettering, OH", "Dayton, OH", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Deltona-Daytona Beach-Ormond Beach, FL", "Daytona Beach, FL", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Denver-Aurora-Lakewood, CO", "Denver, CO", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Des Moines-West Des Moines, IA", "Des Moines, IA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Detroit-Warren-Dearborn, MI", "Detroit, MI", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Durham-Chapel Hill, NC", "Durham, NC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Grand Rapids-Kentwood, MI", "Grand Rapids, MI", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Greensboro-High Point, NC", "Greensboro, NC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Greenville-Anderson, SC", "Greenville, SC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Hartford-East Hartford-Middletown, CT", "Hartford, CT", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Houston-The Woodlands-Sugar Land, TX", "Houston, TX", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Indianapolis-Carmel-Anderson, IN", "Indianapolis, IN", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Las Vegas-Henderson-Paradise, NV", "Las Vegas, NV", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Little Rock-North Little Rock-Conway, AR", "Little Rock, AR", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Louisville/Jefferson County, KY-IN", "Louisville-Jefferson County, KY", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Memphis, TN-MS-AR", "Memphis, TN", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Memphis, TN-MS-AR", "Memphis, TN", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Miami-Fort Lauderdale-Pompano Beach, FL", "Miami-Fort Lauderdale, FL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Milwaukee-Waukesha, WI", "Milwaukee, WI", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Minneapolis-St. Paul-Bloomington, MN-WI", "Minneapolis-St Paul, MN", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Nashville-Davidson--Murfreesboro--Franklin, TN", "Nashville, TN", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("New Haven-Milford, CT", "New Haven, CT", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("New Orleans-Metairie, LA", "New Orleans, LA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("New York-Newark-Jersey City, NY-NJ-PA", "New York, NY", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Ogden-Clearfield, UT", "Ogden, UT", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Omaha-Council Bluffs, NE-IA", "Omaha, NE", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Orlando-Kissimmee-Sanford, FL", "Orlando, FL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Philadelphia-Camden-Wilmington, PA-NJ-DE-MD", "Philadelphia, PA", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Phoenix-Mesa-Chandler, AZ", "Phoenix, AZ", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Portland-South Portland, ME", "Portland, ME", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Providence-Warwick, RI-MA", "Providence, RI", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Raleigh-Cary, NC", "Raleigh, NC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Riverside-San Bernardino-Ontario, CA", "Riverside, CA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Sacramento-Roseville-Folsom, CA", "Sacramento, CA", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("San Diego-Chula Vista-Carlsbad, CA", "San Diego, CA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("San Francisco-Oakland-Berkeley, CA", "San Francisco, CA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("San Jose-Sunnyvale-Santa Clara, CA", "San Jose, CA", Mortgage_Burden$RegionName)
+
+Mortgage_Burden$RegionName <- gsub("Seattle-Tacoma-Bellevue, WA", "Seattle, WA", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Tampa-St. Petersburg-Clearwater, FL", "Tampa, FL", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Virginia Beach-Norfolk-Newport News, VA-NC", "Virginia Beach, VA", Mortgage_Burden$RegionName)
+
+
+Mortgage_Burden$RegionName <- gsub("Washington-Arlington-Alexandria, DC-VA-MD-WV", "Washington, DC", Mortgage_Burden$RegionName)
+Mortgage_Burden$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Mortgage_Burden$RegionName)
+
+
+
+```
+
+
+#### Joining the datasets & filtering to variables needed
+
+We joined our dataset based on the re-coded MSA variables. 
+
+```{r, echo = FALSE, message = FALSE}
+
+data <-  left_join(Median_HH_Income, Mortgage_Burden) %>%
+  left_join(ForSale_Inventory) %>%
+  left_join(Median_List_Price) %>%
+  left_join(Med_Sale_Price)
+
+
+data <- data[ -c(3,4,6:12,15:26, 29:36) ]
+
+#kable(head(data))
+  
+
+
+```
+
+
+#### Filter out the NA Data
+
+We filtered the data using the dyplr package and drop_na function. The Sales Price data had the fewest entries, so we filtered out the NA fields based on that column. 
+
+```{r, , echo = FALSE, message = FALSE}
+
+
+data <- data %>% drop_na(SaleP_Sep) 
+
+```
+
+
+
+```{r,  echo = FALSE, message = FALSE}
+data$MortBurd_Quality <- factor(data$MortBurd_Quality, 
+                         levels = c( "LessBurdened",
+                                    "HighlyBurdened"))
+```
+
+
+#### Observations (UPDATED)
+
+There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MSA) and there are 8 variables in the columns, 4 of which are our variables for the regression analyses. The additional columns are the GEOID, and raw data from which we calculated our Categorical Variables. 
+
+
+
+### Model 1 - Sales Price vs. All Dependent Variables 
+
+
+The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market's for sale inventory, list price, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
+
+All variables are statistically significant. However, as highlighted from the data, the coefficient estimates are very small, ranging from -0.0000000000000003074 to 0.0000000001107. While our results are statistically significant, indicating a relationship among the variables, the impact is very small.It is not even a dollar difference between the variables. 
+
+Furthermore, the multiple R-squared and adjusted R equal 1, and on the surface, it looks like it indicates that there is a strong correlation and relationship. But this relationship is skewed because the Median List Price (dependent variable) and Median Sales Price variable (independent variable) are directly correlated.
+
+Therefore, we re-ran the regression analysis without the Median List Price variable to understand the true effect of the dependent variables on the Median Sales Prices in the MSAs. 
+
+```{r,  echo = FALSE}
+SaleP_model <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality + listP_Sep + Inv_Sep, data = data)
+
+summary(SaleP_model)
+
+```
+
+
+
+### Model 2 - Sales Price vs. All Dependent Variables except Median List Price
+
+
+The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market's for sale inventory, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
+
+MSAs that have a high rate of  mortgage burdened homeowners have a difference of$177,222  in Median Sales Price compared to less mortgage burdened MSAs. The relationship between Rate of Mortgage Burden in the MSA and the Median Sales Price was the only statistically significant relationship found in this model. 
+
+
+```{r,  echo = FALSE}
+SaleP_model2 <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, data = data)
+
+summary(SaleP_model2)
+
+```
+
+
+# Model Transformation
+
+### Means Centering Model 2
+
+Our team is continuing to work with Model 2 because it had a statistically significant relationship and does not include the variable (Median List Price) that has a direct correlation to the independent variable. Below we transform our selected model to be means centered. In Model 2, we only have one variable that can be transformed, Housing Market For Sale Inventory, because it is our only continuous variable in this model. Means centering will take the average for sale inventory size (8,336 housing units) and will center each MSA's for sale inventory above or below that. 
+
+```{r, echo = FALSE}
+full_model <- SaleP_model2 <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, data = data)
+
+summary(full_model)
+```
+
+
+```{r, echo = FALSE, message = FALSE}
+
+mean(data$Inv_Sep, na.rm = TRUE)
+
+centered_data <- data %>%
+  mutate(Inv_Sep = Inv_Sep - mean(Inv_Sep, na.rm=TRUE))
+
+centered_model <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, centered_data)
+
+coeff_names <- c("Constant" = "(Intercept)",
+         #       "Median Sales Price" = "SaleP_Sep", 
+                 "Highly Mortgage Burdened" =
+                   "MortBurd_QualityHighlyBurdened",
+                  "Monthly For sale inventory" = "Inv_Sep",
+                 "Low Median Household Income" = "MedIncome_QualityLow")
+
+export_summs(full_model, centered_model, 
+             error_format = "(p = {p.value})",
+             error_pos = "same",
+             model.names = c("Initial", "Centered"),
+                coefs = coeff_names)
+          
+```
+
+
+
+The initial model had a y-intercept of $266,812, meaning that if no homes were listed for sale, (inventory equals zero) than the median sales price would be $266,812. However, an inventory of zero would mean that there is no activity in the housing market, and if no homes are listed for sale, than none would be sold. Therefore it's impossible to have a median sales price when no sales are transacting. 
+
+After a means centered transformation, the new regression model has a median sales price of $284,302 based on the average sized inventory. The average housing inventory size is 8,336 homes.  As expected, the R value, relationship fit and coefficient values do not change as only the data has been transformed to have a more meaningful interpretation. 
+
+
+The means centered transformation worked best for our model because the data was already at a scale that made sense and was able to be interpreted. Furthermore, the variables have a small direct relationship, so a non-linear transformation would not have positively impacted the fit of the model. 
+
+
+
+# Model Interactions
+
+https://c-voulgaris.github.io/GSD_SES_5215_F2021/A6_Example.html#Bivariate_regression
+
+
+
+```{r}
+effect_plot(full_model, pred = Inv_Sep, interval = TRUE) +
+  scale_y_continuous(name = "Y Variables??") +
+  scale_x_continuous(name = "For Sale House Inventory")
+                    # breaks = breaks <- seq(0, 700, by = 100),
+                     #labels = prettyNum(breaks*100, big.mark = ","))
+
+```
+
+
+
+
