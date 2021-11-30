@@ -41,6 +41,10 @@ library(huxtable)
 library(ggplot2)
 
 
+
+
+
+library(interactions)
 ```
 
 #### Variable Definitions
@@ -383,15 +387,10 @@ The means centered transformation worked best for our model because the data was
 
 
 
-# Model Interactions
 
-https://c-voulgaris.github.io/GSD_SES_5215_F2021/A6_Example.html#Bivariate_regression
-
-
-
-```{r}
+```{r,  echo = FALSE, message = FALSE}
 effect_plot(centered_model, pred = Inv_Sep, interval = TRUE) +
-  scale_y_continuous(name = "Median Sales Price + Socioeconomic determinants")+
+  scale_y_continuous(name = "Median Sales Price + Socioeconomic determinants") +
                      # breaks = breaks <- seq(0, 700000, by = 100000), 
                      # labels = prettyNum(breaks*100, big.mark = ",")) +
   scale_x_continuous(name = "Inventory Size")
@@ -414,7 +413,7 @@ Does the relationship between inventory size and median sale price change based 
 
 
 ##### How does Housing Burden impact Sale Price in an MSA? 
-```{r}
+```{r,  echo = FALSE, message = FALSE}
 interaction_model <- lm(SaleP_Sep ~ Inv_Sep + MedIncome_Quality + MortBurd_Quality  + Inv_Sep*MortBurd_Quality, centered_data)
 
 export_summs(centered_model, interaction_model,
@@ -435,13 +434,13 @@ summary(interaction_model)
 
 
 
-The model fit improved minimally, with the correlation increasing from 0.27 to 0.28. The significance reamins the same. 
+The model fit improved minimally, with the correlation increasing from 0.27 to 0.28. The significance remains the same. In the plot, however, the difference between less housing burdened and more housing burdened MSAs is apparent.The less burdened MSAs have a wide range, suggesting that there is a weaker correlation between the variables. While the higher burdened MSAs have a closer range,  suggesting that there is a stronger correlation between median sales price and for sale inventory size in highly housing burdened MSAs.  
 
-```{r}
+```{r,  echo = FALSE, message = FALSE}
 interact_plot(interaction_model, pred = Inv_Sep, modx = MortBurd_Quality,
               interval = TRUE) +
-  scale_x_continuous(name = "X") +
-  scale_y_continuous(name = "Y")
+  scale_x_continuous(name = "for sale housing inventory") +
+  scale_y_continuous(name = "median sales price")
 
 
 
