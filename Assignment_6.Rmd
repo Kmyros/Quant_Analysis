@@ -38,6 +38,7 @@ library(dplyr)
 library(gridExtra)
 library(jtools)
 library(huxtable)
+library(ggplot2)
 
 
 ```
@@ -358,7 +359,6 @@ centered_data <- data %>%
 centered_model <- lm(SaleP_Sep ~ MedIncome_Quality + MortBurd_Quality  + Inv_Sep, centered_data)
 
 coeff_names <- c("Constant" = "(Intercept)",
-         #       "Median Sales Price" = "SaleP_Sep", 
                  "Highly Mortgage Burdened" =
                    "MortBurd_QualityHighlyBurdened",
                   "Monthly For sale inventory" = "Inv_Sep",
@@ -390,23 +390,58 @@ https://c-voulgaris.github.io/GSD_SES_5215_F2021/A6_Example.html#Bivariate_regre
 
 
 ```{r}
-effect_plot(full_model, pred = SaleP_Sep, interval = TRUE) +
-  scale_y_continuous(name = "Inventory Size for MSAs /n by Socioeconomic determinants") +
-  scale_x_continuous(name = "Median Sale Price")
-                    # breaks = breaks <- seq(0, 700, by = 100),
-                     #labels = prettyNum(breaks*100, big.mark = ","))
+effect_plot(centered_model, pred = Inv_Sep, interval = TRUE) +
+  scale_y_continuous(name = "Median Sales Price + Socioeconomic determinants")+
+                     # breaks = breaks <- seq(0, 700000, by = 100000), 
+                     # labels = prettyNum(breaks*100, big.mark = ",")) +
+  scale_x_continuous(name = "Inventory Size")
+  
 
 ```
 
 
-Interaction Model 
 
-How does Housing Burden impact Sale Price in an MSA? 
+
+
+
+# Interaction Model 
+
+
+
+Based on the means centered model, we see that higher median ages are correlated with larger for sale housing inventories. Controlling for the inventory size we can see if highly Homeowner Housing Burdened MSAs have a higher median sales price or a lower one. 
+Does the relationship between inventory size and median sale price change based on an MSA's housing burden rate? 
+
+
+
+##### How does Housing Burden impact Sale Price in an MSA? 
 ```{r}
-#interaction_model <- lm(covid_rate ~ med_age_10 + log(pop_dens, base = 2) + majority_vote + type + med_age_10*majority_vote, centered_data_scaled_log)
+interaction_model <- lm(SaleP_Sep ~ Inv_Sep + MedIncome_Quality + MortBurd_Quality  + Inv_Sep*MortBurd_Quality, centered_data)
+
+export_summs(centered_model, interaction_model,
+             error_format = "(p = {p.value})",
+             error_pos = "same",
+             model.names = c("Centered Model",
+                             "Interaction Model"),
+              coefs = coeff_names)
+
+
+
+summary(interaction_model)
+
+#  lm(covid_rate ~ med_age_10 + log(pop_dens, base = 2) + majority_vote + type + med_age_10*majority_vote, centered_data_scaled_log)
 
 #the interaction is med_age_10*majority_vote
 ```
 
+
+
+The model fit improved minimally, with the corrleation increasing from 0.27 to 0.28. The significance reamins the same. 
+
+```{r}
+interact_plot(interaction_model, pred = Inv_Sep, modx = MortBurd_Quality,
+              interval = TRUE) 
+  scale_x_continuous(name = "X") +
+  scale_y_continuous(name = "Y")
+```
 
 
