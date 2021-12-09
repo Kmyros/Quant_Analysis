@@ -36,15 +36,7 @@ Housing costs burden is defined as households who spend more than 30% of their i
 
 Under the real estate domain, it has also been established that transaction volume is an indicator whether demand has been rising and can be a precursor to rising prices (Norm & Michael, 1986). Ultimately, housing cost burdens results in a significant barrier to housing affordability in the United States of America, despite the fact that home ownership encourages wealth creation and forms a basis of financial security. (Goodman and Mayer, 2018)
 
-Given the relationship between prices and transaction volume, 
-
-
-
-
-
-
-
-
+Given the relationship between prices and transaction volume, is it possible that prices and transaction volume vary based on characteristics in the market? Specifically, how do markets that have a higher rate of housing  burdened households differ than markets that have less. Perhaps  there demographic differences or number of houses for sale in the market. These questions build on existing research to assess potential relationships between these variables. 
 
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE}
@@ -67,10 +59,12 @@ library(ggplot2)
 library(interactions)
 ```
 
-#### Variable Definitions
+
+# Data
 
 
-**CATEGORICAL VARIABLES**
+
+#### Categorical Variables
 
 Our team created the following categorical variables using the U.S. Census Bureau, American Community Survey 1-year estimates data. 
 
@@ -84,7 +78,7 @@ Highly burdened means 30 percent or more of the mortgaged homeowner population a
 
 
 
-**CONTINUOUS VARIABLES**
+#### Continious Variables
 
 Our team identified the following continuous variables from the Zillow research data center. 
 
@@ -126,7 +120,7 @@ Median_List_Price <- read_excel("MSA_Median List Price.xlsx")
 
 #### Matching the Census Data MSA to the Zillow Data MSA 
 
-Initially our datasets only matched by 25 MSAs out of approximately 300 available. There were two issues, the Zillow datasets had only 95 MSAs compared to the 300 listed by the Census Bureau. The second issue, was that the syntax between the dataset varied slightly. We used the gsub function to rename the Census Data variables to match the Zillow data MSA variables. 
+Initially our datasets only matched by 25 MSAs out of approximately 300 available. There were two issues, the Zillow data sets had only 95 MSAs compared to the 300 listed by the Census Bureau. The second issue, was that the syntax between the data set varied slightly. We used the gsub function to rename the Census Data variables to match the Zillow data MSA variables. 
 
 ```{r, echo = FALSE, message = FALSE}
 
@@ -279,7 +273,7 @@ Mortgage_Burden$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Mortgage
 
 #### Joining the datasets & filtering to variables needed
 
-We joined our dataset based on the re-coded MSA variables. 
+We joined our data set based on the re-coded MSA variables. 
 
 ```{r, echo = FALSE, message = FALSE}
 
@@ -318,13 +312,18 @@ data$MortBurd_Quality <- factor(data$MortBurd_Quality,
 ```
 
 
-#### Observations (UPDATED)
+#### Observations
 
 There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MSA) and there are 8 variables in the columns, 4 of which are our variables for the regression analyses. The additional columns are the GEOID, and raw data from which we calculated our Categorical Variables. 
 
 
 
-### Model 1 - Sales Price vs. All Dependent Variables 
+
+
+
+# Results
+
+#### Model 1 - Sales Price vs. All Dependent Variables 
 
 
 The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market's for sale inventory, list price, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
@@ -344,7 +343,7 @@ summary(SaleP_model)
 
 
 
-### Model 2 - Sales Price vs. All Dependent Variables except Median List Price
+#### Model 2 - Sales Price vs. All Dependent Variables except Median List Price
 
 
 The model below is testing whether or not the Median Sale Price in an MSA's housing market is impacted by the housing market's for sale inventory, rate of mortgage burdened homeowners, and whether or not it is a high median income MSA or a lower median income MSA.  
@@ -360,9 +359,9 @@ summary(SaleP_model2)
 ```
 
 
-# Model Transformation
 
-### Means Centering Model 2
+
+#### Model Transformation: Means Centering Model 2
 
 Our team is continuing to work with Model 2 because it had a statistically significant relationship and does not include the variable (Median List Price) that has a direct correlation to the independent variable. Below we transform our selected model to be means centered. In Model 2, we only have one variable that can be transformed, Housing Market For Sale Inventory, because it is our only continuous variable in this model. Means centering will take the average for sale inventory size (8,336 housing units) and will center each MSA's for sale inventory above or below that. 
 
