@@ -118,9 +118,13 @@ Median_List_Price <- read_excel("MSA_Median List Price.xlsx")
 
 ```
 
-#### Matching the Census Data MSA to the Zillow Data MSA 
+#### Methodology
 
-Initially our datasets only matched by 25 MSAs out of approximately 300 available. There were two issues, the Zillow data sets had only 95 MSAs compared to the 300 listed by the Census Bureau. The second issue, was that the syntax between the data set varied slightly. We used the gsub function to rename the Census Data variables to match the Zillow data MSA variables. 
+The unit of our analysis is the Metropolitan Statistical Area, this is the geography level  at whcih the categorical and continious varaibles are available. Initially our data sets only matched by 25 Metropolitan Statistical Areas (MSAs) out of approximately 300 available. There were two issues, the Zillow data sets had only 95 MSAs compared to the 300 listed by the Census Bureau. The second issue, was that the syntax between the data set varied slightly. In order to match the variables, we used the gsub function to rename the Census Data variables to match the Zillow data MSA variables. Then we successfully joined the two data sets based on the re-coded MSA variables. 
+
+There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MSA) and there are 8 variables in the columns, 4 of which are our variables for the regression analyses. The additional columns are the GEOID, and raw data from which we calculated our Categorical Variables. 
+
+
 
 ```{r, echo = FALSE, message = FALSE}
 
@@ -271,10 +275,6 @@ Mortgage_Burden$RegionName <- gsub("Worcester, MA-CT", "Worcester, MA", Mortgage
 ```
 
 
-#### Joining the datasets & filtering to variables needed
-
-We joined our data set based on the re-coded MSA variables. 
-
 ```{r, echo = FALSE, message = FALSE}
 
 data <-  left_join(Median_HH_Income, Mortgage_Burden) %>%
@@ -292,17 +292,12 @@ data <- data[ -c(3,4,6:12,15:26, 29:36) ]
 ```
 
 
-#### Filter out the NA Data
-
-We filtered the data using the dyplr package and drop_na function. The Sales Price data had the fewest entries, so we filtered out the NA fields based on that column. 
-
 ```{r, , echo = FALSE, message = FALSE}
 
 
 data <- data %>% drop_na(SaleP_Sep) 
 
 ```
-
 
 
 ```{r,  echo = FALSE, message = FALSE}
@@ -312,9 +307,109 @@ data$MortBurd_Quality <- factor(data$MortBurd_Quality,
 ```
 
 
-#### Observations
+#### Descriptive Statistics 
 
-There are 75 rows of data, this represents 75 Metropolitan Statistical Areas (MSA) and there are 8 variables in the columns, 4 of which are our variables for the regression analyses. The additional columns are the GEOID, and raw data from which we calculated our Categorical Variables. 
+
+Continuous  Variable Histograms 
+```{r}
+
+soldp_t_test <- t.test(data$SaleP_Sep)
+listp_t_test <- t.test(data$listP_Sep)
+inventory_t_test <- t.test(data$Inv_Sep)
+soldp_quant <- quantile(data$SaleP_Sep, na.rm = TRUE)
+listp_quant <- quantile(data$listP_Sep, na.rm = TRUE)
+inventory_quant <- quantile(data$Inv_Sep, na.rm = TRUE)
+soldp_st_dev <- sd(data$SaleP_Sep, na.rm = TRUE)
+listp_st_dev <- sd(data$listP_Sep, na.rm = TRUE)
+inventory_st_dev <- sd(data$Inv_Sep, na.rm = TRUE)
+
+soldp_hist <- ggplot(data) +
+  geom_histogram(aes(x = SaleP_Sep),
+                 bins = 30)
+scale_x_continuous(trans = "log")
+
+listp_hist <- ggplot (data) +
+  geom_histogram(aes(x= listP_Sep),
+                 bins = 30)
+scale_x_continuous(trans = "log")
+
+inventoryp_hist <- ggplot (data) +
+  geom_histogram(aes(x= Inv_Sep),
+                 bins = 30)
+scale_x_continuous(trans = "log")
+
+
+
+cont_summary <- tibble(
+  Variable = c("Sold prices", 
+               "Listed prices", 
+               "Inventory Volume"),
+  `Sample mean` = c(soldp_t_test$estimate,
+                    listp_t_test$estimate,
+                    inventory_t_test$estimate),
+  `Prices mean (95% confidence) - low` = 
+    c(soldp_t_test$conf.int[1],
+      listp_t_test$conf.int[1],
+      inventory_t_test$conf.int[1]),
+  `Population mean (95% confidence) - high` =
+    c(soldp_t_test$conf.int[2],
+      listp_t_test$conf.int[2],
+      inventory_t_test$conf.int[2]),
+  Median = c(soldp_quant[3],
+             listp_quant[3],
+             inventory_quant[3]),
+  `Interquartile range` = c(soldp_quant[4] - soldp_quant[2],
+                            listp_quant[4] - listp_quant[2],
+                            inventory_quant[4] - inventory_quant[2]),
+  `Standard deviation` = c(soldp_st_dev,
+                          listp_st_dev,
+                          inventory_st_dev))
+
+kable(cont_summary, digits = 0)
+
+pretty_soldp_hist <- soldp_hist +
+  theme_bw() +
+  scale_x_continuous(name = "Median price") +
+  scale_y_continuous(name = "Sold Price Range") +
+  theme(axis.text.x = element_text(angle = 90))
+
+pretty_listp_hist <- listp_hist +
+  theme_bw() +
+  scale_x_continuous(name = "Median price") +
+  scale_y_continuous(name = "Listed Price Range") +
+  theme(axis.text.x = element_text(angle = 90))
+
+pretty_inventoryp_hist <- inventoryp_hist +
+  theme_bw() +
+  scale_x_continuous(name = "Median price") +
+  scale_y_continuous(name = "Inventory Range") +
+  theme(axis.text.x = element_text(angle = 90))
+
+grid.arrange(pretty_soldp_hist, pretty_listp_hist, pretty_inventoryp_hist,
+             ncol = 3)
+
+
+
+```
+
+
+
+Categorical T-Test 
+```{r}
+
+pct_highincome <- t.test(data$MedIncome_Quality == "High")
+pct_lowincome <-  t.test(data$MedIncome_Quality == "Low")
+
+pct_highlyburdened <- t.test(data$MortBurd_Quality == "HighlyBurdened")
+pct_lessburdened <-  t.test(data$MortBurd_Quality == "LessBurdened")
+
+```
+
+
+
+
+
+
 
 
 
